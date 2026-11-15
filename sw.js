@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cicerone-cache-v1'; // Incrementata la versione per aggiornare la cache sui dispositivi
+const CACHE_NAME = 'cicerone-cache-v2'; // Incrementata la versione per aggiornare la cache sui dispositivi
 
 // Mettiamo in cache iniziale i file testuali indispensabili, incluso il CSV e i GeoJSON
 const ASSETS_TO_CACHE = [
