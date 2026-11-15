@@ -1,36 +1,51 @@
 const CACHE_NAME = 'cicerone-cache-v2'; // Incrementata la versione per aggiornare la cache sui dispositivi
 
-// Mettiamo in cache iniziale i file testuali indispensabili, incluso il CSV e i GeoJSON
+// Mettiamo in cache iniziale i file testuali indispensabili, incluso il CSV
 const ASSETS_TO_CACHE = [
   './Cicerone_Marche.html',
   './manifest.json',
   './Leaflet/leaflet.css',
   './Leaflet/leaflet.js',
-  './MARCHE_2026.csv', // <--- AGGIUNTO QUI
+  './MARCHE_2026.csv'
 ];
-// 1. Installazione[cite: 2]
+
+// 1. Installazione
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Pre-caching file di sistema...'); //[cite: 2]
-      return cache.addAll(ASSETS_TO_CACHE); //[cite: 2]
-    }).then(() => self.skipWaiting()) //[cite: 2]
+      console.log('Pre-caching file di sistema...');
+      return cache.addAll(ASSETS_TO_CACHE);
+    }).then(() => self.skipWaiting())
   );
 });
 
-// 2. Attivazione e pulizia vecchie cache[cite: 2]
+// 2. Attivazione e pulizia vecchie cache
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('Rimozione vecchia cache:', cache); //[cite: 2]
-            return caches.delete(cache); //[cite: 2]
- );
+            console.log('Rimozione vecchia cache:', cache);
+            return caches.delete(cache);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
-// 3. Intercetta specificamente le richieste per i file CSV per dare priorità alla freschezza o alla cache sicura
+// 3. Gestione intelligente delle richieste (Fetch)
+self.addEventListener('fetch', (event) => {
+  // Sicurezza: Ignora richieste non HTTP (es. estensioni del browser)
+  if (!event.request.url.startsWith('http')) return;
+
+  // Se la richiesta va verso siti esterni, lasciala passare direttamente su internet
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // A. Gestione specifica per i file CSV (dà priorità alla freschezza o fallback su cache)
   if (event.request.url.endsWith('.csv')) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
@@ -44,50 +59,31 @@ self.addEventListener('activate', (event) => {
           return networkResponse;
         }).catch(() => cachedResponse); // Se la rete fallisce, usa la cache
 
-        // Restituisce subito la cache se c'è, aggiornando in background
         return cachedResponse || fetchPromise;
       })
     );
     return;
   }
-        })
-      );
-    }).then(() => self.clients.claim()) //[cite: 2]
-  );
-});
 
-// 4. Gestione intelligente delle richieste (Mappe, Foto e File)[cite: 2]
-self.addEventListener('fetch', (event) => {
-  // Sicurezza: Ignora richieste non HTTP (es. estensioni del browser)[cite: 2]
-  if (!event.request.url.startsWith('http')) return; //[cite: 2]
-
-  // Se la richiesta va verso siti esterni, lasciala passare direttamente su internet[cite: 2]
-  if (!event.request.url.startsWith(self.location.origin)) {
-    return; //[cite: 2]
-  }
-
+  // B. Gestione standard per tutte le altre risorse (Mappe, Foto, GeoJSON, HTML)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Se il file è già in cache, lo restituisce subito[cite: 2]
       if (cachedResponse) {
-        return cachedResponse; //[cite: 2]
+        return cachedResponse;
       }
 
-      // Altrimenti tenta di prenderlo dal server locale/GitHub[cite: 2]
       return fetch(event.request).then((networkResponse) => {
-        // Se la risposta è valida, la duplica e la mette in cache per la prossima volta[cite: 2]
         if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone(); //[cite: 2]
+          const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache); //[cite: 2]
+            cache.put(event.request, responseToCache);
           });
         }
-        return networkResponse; //[cite: 2]
+        return networkResponse;
       }).catch((err) => {
-        console.warn('Risorsa non trovata o offline:', event.request.url); //[cite: 2]
+        console.warn('Risorsa non trovata o offline:', event.request.url);
         
-        // MODIFICA STRUTTURALE: Se l'app sta cercando un file .geojson ed è offline,
-        // restituiamo un JSON vuoto valido `{}` invece di una stringa di testo.
+        // Se cerca un file .geojson ed è offline, restituisce un JSON vuoto valido
         if (event.request.url.endsWith('.geojson')) {
           return new Response('{}', {
             status: 404,
@@ -96,11 +92,10 @@ self.addEventListener('fetch', (event) => {
           });
         }
 
-        // Per tutte le altre risorse (immagini, mappe, ecc.) restituisce il comportamento standard[cite: 2]
         return new Response('Risorsa non disponibile offline', {
           status: 404,
           statusText: 'Not Found',
-          headers: new Headers({ 'Content-Type': 'text/plain' }) //[cite: 2]
+          headers: new Headers({ 'Content-Type': 'text/plain' })
         });
       });
     })

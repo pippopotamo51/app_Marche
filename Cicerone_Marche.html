@@ -1610,12 +1610,12 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log("Tentativo di caricamento automatico dal database di GitHub...");
 
     // Non serve più un link esterno, puntiamo direttamente al file caricato nel progetto!
-    const urlDatabaseLocal = "./Vacanze_LAZIO.csv";
+    const urlDatabaseLocal = "./MARCHE_2026.csv";
 
     fetch(urlDatabaseLocal)
         .then(response => {
             if (!response.ok) {
-                throw new Error("Impossibile trovare il file Vacanze_LAZIO.csv su GitHub (Stato: " + response.status + ")");
+                throw new Error("Impossibile trovare il file MARCHE_2026.csv su GitHub (Stato: " + response.status + ")");
             }
             return response.text();
         })
