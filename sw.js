@@ -1,13 +1,13 @@
 const CACHE_NAME = 'cicerone-cache-v1'; // Incrementata la versione per aggiornare la cache sui dispositivi
 
-// Mettiamo in cache iniziale solo i file testuali indispensabili
+// Mettiamo in cache iniziale i file testuali indispensabili, incluso il CSV e i GeoJSON
 const ASSETS_TO_CACHE = [
-  './Cicerone_Marche.html', //[cite: 2]
-  './manifest.json', //[cite: 2]
-  './Leaflet/leaflet.css', //[cite: 2]
-  './Leaflet/leaflet.js' //[cite: 2]
+  './Cicerone_Marche.html',
+  './manifest.json',
+  './Leaflet/leaflet.css',
+  './Leaflet/leaflet.js',
+  './MARCHE_2026.csv', // <--- AGGIUNTO QUI
 ];
-
 // 1. Installazione[cite: 2]
 self.addEventListener('install', (event) => {
   event.waitUntil(
