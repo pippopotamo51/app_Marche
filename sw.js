@@ -27,14 +27,36 @@ self.addEventListener('activate', (event) => {
           if (cache !== CACHE_NAME) {
             console.log('Rimozione vecchia cache:', cache); //[cite: 2]
             return caches.delete(cache); //[cite: 2]
+ );
+});
+
+// 3. Intercetta specificamente le richieste per i file CSV per dare priorità alla freschezza o alla cache sicura
+  if (event.request.url.endsWith('.csv')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
           }
+          return networkResponse;
+        }).catch(() => cachedResponse); // Se la rete fallisce, usa la cache
+
+        // Restituisce subito la cache se c'è, aggiornando in background
+        return cachedResponse || fetchPromise;
+      })
+    );
+    return;
+  }
         })
       );
     }).then(() => self.clients.claim()) //[cite: 2]
   );
 });
 
-// 3. Gestione intelligente delle richieste (Mappe, Foto e File)[cite: 2]
+// 4. Gestione intelligente delle richieste (Mappe, Foto e File)[cite: 2]
 self.addEventListener('fetch', (event) => {
   // Sicurezza: Ignora richieste non HTTP (es. estensioni del browser)[cite: 2]
   if (!event.request.url.startsWith('http')) return; //[cite: 2]
