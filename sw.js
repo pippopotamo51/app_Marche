@@ -83,11 +83,10 @@ self.addEventListener('fetch', (event) => {
       }).catch((err) => {
         console.warn('Risorsa non trovata o offline:', event.request.url);
         
-        // Se cerca un file .geojson ed è offline, restituisce un JSON vuoto valido
+        // Se cerca un file .geojson, restituisce un JSON vuoto valido evitando il blocco
         if (event.request.url.endsWith('.geojson')) {
-          return new Response('{}', {
-            status: 404,
-            statusText: 'Not Found',
+          return new Response(JSON.stringify({ type: "FeatureCollection", features: [] }), {
+            status: 200,
             headers: new Headers({ 'Content-Type': 'application/json' })
           });
         }

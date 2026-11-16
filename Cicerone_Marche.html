@@ -1268,44 +1268,53 @@ function attivaMappaDaItinerario() {
 }
 // ==========================================
 
-    setTimeout(() => {
-        mappaLeafletIstanza.invalidateSize();
-    }, 150);
-    function inizializzaMappaCoordinate(lat, lng, titoloMonumento, nomeCartella) {
-        const mapBox = document.getElementById('map-view-box');
-        mapBox.style.display = "block";
-        
-        if(mappaLeafletIstanza) {
-            mappaLeafletIstanza.remove();
-        }
-        
-        // MODIFICA TEST: SetView centrata sul livello di zoom 17 validato dal tester
-        mappaLeafletIstanza = L.map('map-view-box').setView([lat, lng], 17);
 
-        let percorsoMappa = (nomeCartella && nomeCartella.trim() !== "") ? nomeCartella.trim() : 'mappe-offline/giorno1';
+// 2. Funzione completa e corretta per inizializzare la mappa del singolo monumento
+function inizializzaMappaCoordinate(lat, lng, titoloMonumento, nomeCartella) {
+    const mapBox = document.getElementById('map-view-box');
+    if (!mapBox) return;
+    mapBox.style.display = "block";
+    
+    // Rimuove l'istanza precedente se esiste
+    if (mappaLeafletIstanza) {
+        mappaLeafletIstanza.remove();
+        mappaLeafletIstanza = null;
+    }
+    
+    // Inizializza la mappa con i limiti di zoom coerenti con i tile (12-14)
+    mappaLeafletIstanza = L.map('map-view-box', {
+        minZoom: 12,
+        maxZoom: 14
+    }).setView([lat, lng], 13);
 
-        // MODIFICA TEST: Estensione forzata su .png in conformità con i file fisici estratti
-let percorsoMappaRealeTest = percorsoMappa;
+    let percorsoMappa = (nomeCartella && nomeCartella.trim() !== "") ? nomeCartella.trim() : 'mappe-offline/giorno1';
+    let percorsoMappaRealeTest = percorsoMappa;
 
-// Forza il percorso relativo inserendo il punto "./" se manca
-if (percorsoMappaRealeTest.startsWith('/')) {
-    percorsoMappaRealeTest = '.' + percorsoMappaRealeTest;
-} else if (!percorsoMappaRealeTest.startsWith('./')) {
-    percorsoMappaRealeTest = './' + percorsoMappaRealeTest;
-}
+    // Forza il percorso relativo inserendo il punto "./" se manca
+    if (percorsoMappaRealeTest.startsWith('/')) {
+        percorsoMappaRealeTest = '.' + percorsoMappaRealeTest;
+    } else if (!percorsoMappaRealeTest.startsWith('./')) {
+        percorsoMappaRealeTest = './' + percorsoMappaRealeTest;
+    }
 
-L.tileLayer(`${percorsoMappaRealeTest}/{z}/{x}/{y}.png`, { 
-    maxZoom: 19, 
-    attribution: 'Mappa Monumento',
-    errorTileUrl: './Leaflet/images/no-tile.png' // Ti consiglio di aggiungere questo per evitare rettangoli grigi se manca un tassello
-}).addTo(mappaLeafletIstanza);
+    // Aggiunge i tile raster offline con i limiti corretti
+    L.tileLayer(`${percorsoMappaRealeTest}/{z}/{x}/{y}.png`, { 
+        minZoom: 12,
+        maxZoom: 14, 
+        attribution: 'Mappa Monumento',
+        errorTileUrl: './Leaflet/images/no-tile.png'
+    }).addTo(mappaLeafletIstanza);
 
-        L.marker([lat, lng], { icon: iconaMarkerOffline }).addTo(mappaLeafletIstanza)
-         .bindPopup(`<b>${titoloMonumento}</b>`)
-         .openPopup();
-         
+    // Aggiunge il marker del monumento
+    L.marker([lat, lng], { icon: iconaMarkerOffline }).addTo(mappaLeafletIstanza)
+     .bindPopup(`<b>${titoloMonumento}</b>`)
+     .openPopup();
+     
+    // Aggiorna le dimensioni in modo sicuro
+    if (mappaLeafletIstanza) {
         mappaLeafletIstanza.invalidateSize();
     }
+}
 
     function tornaAiMonumentiDaOpere() {
         const paesePrecedente = database.find(item => item.id === idPaeseCorrente);
